@@ -39,7 +39,10 @@ def is_matching_file(path: str | Path) -> bool:
 
 
 def is_network_path(path: str | Path) -> bool:
-    """Проверить, является ли путь сетевым (UNC или сетевой диск, Windows)."""
+    """Проверить, является ли путь сетевым.
+
+    Windows: UNC или сетевой диск. Linux: точки монтирования nfs/cifs/smb/sshfs.
+    """
     s = str(path)
     if s.startswith("\\\\") or s.startswith("//"):
         return True
@@ -55,6 +58,20 @@ def is_network_path(path: str | Path) -> bool:
                 pass
     except Exception:
         pass
+    if os.name == "posix":
+        # сетевые ФС из /proc/mounts
+        try:
+            ap = os.path.abspath(s)
+            with open("/proc/mounts", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) >= 3 and parts[2].lower() in (
+                            "nfs", "nfs4", "cifs", "smbfs", "fuse.sshfs"):
+                        mnt = parts[1]
+                        if ap == mnt or ap.startswith(mnt.rstrip("/") + "/"):
+                            return True
+        except Exception:
+            pass
     return False
 
 

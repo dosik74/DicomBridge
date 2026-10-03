@@ -83,7 +83,7 @@ def test_analyze_reports_charset():
         ds.SOPInstanceUID = meta.MediaStorageSOPInstanceUID
         raw = "Иванов".encode("cp1251").decode("latin-1")
         ds.PatientName = raw
-        ds.save_as(str(p), write_like_original=False)
+        ds.save_as(str(p), enforce_file_format=False)
         info = enc.analyze_file(str(p), enc.MODE_TO_UTF8)
         assert info["would_change"] is True
         assert "Иванов" in info["patient_after"]

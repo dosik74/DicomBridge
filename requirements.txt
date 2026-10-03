@@ -4,3 +4,11 @@ watchdog>=3.0
 PySide6>=6.5
 pytest>=7.0
 pyinstaller>=6.0
+# Распаковка сжатых пикселей для автотранскодинга перед C-STORE
+# (JPEG/JPEG-LS/JPEG 2000/RLE -> Explicit LE, если PACS не принял сжатое)
+numpy>=1.24
+pillow>=10.0
+pylibjpeg>=2.0
+pylibjpeg-libjpeg>=2.0
+pylibjpeg-openjpeg>=2.0
+pyjpegls>=1.4

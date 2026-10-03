@@ -53,7 +53,7 @@ def make_dicom(path: Path, patient_name_cp1251: bytes, patient_id: str = "") -> 
     # удаляем Specific Character Set — его нет в «плохих» файлах
     if "SpecificCharacterSet" in ds:
         del ds["SpecificCharacterSet"]
-    ds.save_as(str(path), write_like_original=False)
+    ds.save_as(str(path), enforce_file_format=False)
     print(f"создан: {path} (PatientName raw={patient_name_cp1251!r})")
 
 

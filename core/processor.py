@@ -49,9 +49,11 @@ class Processor:
     def __init__(self, config, error_queue, sender_factory=None,
                  on_event=None, on_stats=None):
         from core import encoding_fix, tags as tags_mod
+        from core.queue import SeenCache
 
         self.config = config
         self.error_queue = error_queue
+        self.seen = SeenCache(config.db_path())
         self.sender_factory = sender_factory  # callable(cfg)->PacsSender
         self.on_event = on_event or (lambda e: None)
         self.on_stats = on_stats or (lambda s: None)
@@ -173,6 +175,14 @@ class Processor:
         if delay > 2.0:
             time.sleep(delay - 2.0)  # остаток задержки сверх проверок
 
+        # уже обрабатывали такой файл (например, при рестарте) — пропуск
+        try:
+            if self.seen.is_seen(path):
+                log.info("уже обработан ранее, пропуск: %s", path)
+                return True
+        except Exception as exc:
+            log.error("проверка seen-кеша: %s", exc)
+
         # --- копирование в папку экспорта ---
         export_path = self._copy_to_export(path)
         if not export_path:
@@ -249,8 +259,12 @@ class Processor:
                 changes.extend(anon_changes)
 
             # --- сохранение обработанной копии ---
-            ds.save_as(export_path, write_like_original=False)
+            ds.save_as(export_path, enforce_file_format=False)
             log.info("сохранена обработанная копия: %s", export_path)
+            try:
+                self.seen.mark(path)
+            except Exception as exc:
+                log.error("запись seen-кеша: %s", exc)
         except Exception as exc:
             log.exception("ошибка преобразования %s: %s", path, exc)
             self.stats.inc("errors")

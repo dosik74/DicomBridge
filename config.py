@@ -12,7 +12,7 @@ from pathlib import Path
 
 # === Название и версия меняются только здесь ===
 APP_NAME = "DicomBridge"
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 
 SECTION_DEFAULTS = {
     "General": {
@@ -84,8 +84,8 @@ SECTION_DEFAULTS = {
         # Контакты ответственной организации/инженера (видны в «О программе»).
         # Заполняет инженер при внедрении в больнице.
         "organization": "",
-        "engineer": "",
-        "phone": "",
+        "engineer": "Кәдірберді Әсет",
+        "phone": "+7 707 861 6635",
     },
 }
 

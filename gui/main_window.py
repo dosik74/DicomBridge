@@ -30,9 +30,6 @@ from i18n import STR, t
 
 log = logging.getLogger("gui")
 
-# Ссылка автора на GitHub (кнопка в диалоге «О программе»).
-GITHUB_URL = "https://github.com/dosik74"
-
 
 class _LogBridge(QObject):
     line = Signal(str)
@@ -49,34 +46,61 @@ def sender_from_config(cfg: ConfigManager) -> PacsSender:
 
 
 def set_autostart(enabled: bool, app_name: str = "DicomBridge") -> bool:
-    """Автозапуск через HKCU Run. Возвращает успех."""
-    if sys.platform != "win32":
-        return False
-    try:
-        import winreg
-        key = winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            r"Software\Microsoft\Windows\CurrentVersion\Run",
-            0, winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE,
-        )
-        with key:
+    """Автозапуск: Windows — HKCU Run, Linux — XDG autostart. Возвращает успех."""
+    if sys.platform == "win32":
+        try:
+            import winreg
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Run",
+                0, winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE,
+            )
+            with key:
+                if enabled:
+                    exe = sys.executable if getattr(sys, "frozen", False) else sys.executable
+                    if getattr(sys, "frozen", False):
+                        cmd = f'"{exe}"'
+                    else:
+                        script = str(Path(sys.argv[0]).resolve())
+                        cmd = f'"{exe}" "{script}" --minimized'
+                    winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, cmd)
+                else:
+                    try:
+                        winreg.DeleteValue(key, app_name)
+                    except FileNotFoundError:
+                        pass
+            return True
+        except Exception as exc:
+            log.error("автозапуск: %s", exc)
+            return False
+    if sys.platform.startswith("linux"):
+        # XDG autostart: ~/.config/autostart/DicomBridge.desktop
+        try:
+            adir = Path.home() / ".config" / "autostart"
+            adir.mkdir(parents=True, exist_ok=True)
+            desktop = adir / f"{app_name}.desktop"
             if enabled:
-                exe = sys.executable if getattr(sys, "frozen", False) else sys.executable
                 if getattr(sys, "frozen", False):
-                    cmd = f'"{exe}"'
+                    cmd = f'"{sys.executable}" --minimized'
                 else:
                     script = str(Path(sys.argv[0]).resolve())
-                    cmd = f'"{exe}" "{script}" --minimized'
-                winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, cmd)
+                    cmd = f'"{sys.executable}" "{script}" --minimized'
+                desktop.write_text(
+                    "[Desktop Entry]\nType=Application\n"
+                    f"Name={app_name}\nExec={cmd}\n"
+                    "X-GNOME-Autostart-enabled=true\n",
+                    encoding="utf-8",
+                )
             else:
                 try:
-                    winreg.DeleteValue(key, app_name)
+                    desktop.unlink()
                 except FileNotFoundError:
                     pass
-        return True
-    except Exception as exc:
-        log.error("автозапуск: %s", exc)
-        return False
+            return True
+        except Exception as exc:
+            log.error("автозапуск (linux): %s", exc)
+            return False
+    return False
 
 
 class MainWindow(QMainWindow):
@@ -720,12 +744,6 @@ class MainWindow(QMainWindow):
         lay.addWidget(info)
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
-        btn_gh = QPushButton("GitHub автора")
-        btn_gh.setToolTip(GITHUB_URL)
-        # маленькая кнопка-ссылка
-        btn_gh.setMaximumWidth(140)
-        btn_gh.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(GITHUB_URL)))
-        btn_row.addWidget(btn_gh)
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         buttons.rejected.connect(dlg.reject)
         buttons.accepted.connect(dlg.accept)

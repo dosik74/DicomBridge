@@ -12,6 +12,8 @@ REM python -m pytest tests -q
 set APPNAME=DicomBridge
 
 pyinstaller --onefile --noconsole --name "%APPNAME%" ^
+  --icon=assets\app.ico ^
+  --add-data="assets;assets" ^
   --hidden-import=pynetdicom ^
   --hidden-import=pynetdicom.sop_class ^
   --hidden-import=pynetdicom.presentation ^

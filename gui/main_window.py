@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QTimer, Signal, Slot, QUrl
-from PySide6.QtGui import QAction, QDesktopServices, QIcon
+from PySide6.QtGui import QAction, QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMainWindow,
@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget, QHeaderView, QMenu,
 )
 
-from config import APP_VERSION, ConfigManager
+from config import APP_VERSION, ConfigManager, resource_path
 from core import cleanup as cleanup_mod
 from core import encoding_fix
 from core import tags as tags_mod
@@ -85,6 +85,10 @@ class MainWindow(QMainWindow):
         self.cfg = cfg
         # имя профиля в заголовке (несколько копий на одном ПК)
         self.setWindowTitle(f"{t('app_title')} [{cfg.profile_name()}]")
+        try:
+            self.setWindowIcon(QIcon(str(resource_path("assets/logo.png"))))
+        except Exception:
+            pass
         self.resize(980, 680)
 
         self.watcher: FolderWatcher | None = None
@@ -404,8 +408,11 @@ class MainWindow(QMainWindow):
 
     def _build_tray(self) -> None:
         self.tray = QSystemTrayIcon(self)
-        # стандартная иконка (без внешнего файла, чтобы exe был однофайловым)
-        self.tray.setIcon(QApplication.style().standardIcon(QStyle.SP_ComputerIcon))
+        # логотип программы (без внешнего файла exe не собрать — assets вшит через --add-data)
+        try:
+            self.tray.setIcon(QIcon(str(resource_path("assets/logo.png"))))
+        except Exception:
+            self.tray.setIcon(QApplication.style().standardIcon(QStyle.SP_ComputerIcon))
         menu = QMenu()
         act_show = QAction(t("tray_show"), self)
         act_show.triggered.connect(self.showNormal)
@@ -689,7 +696,20 @@ class MainWindow(QMainWindow):
         phone = c.get("Support", "phone", "") or "—"
         dlg = QDialog(self)
         dlg.setWindowTitle(f"О программе {APP_NAME}")
+        try:
+            dlg.setWindowIcon(QIcon(str(resource_path("assets/logo.png"))))
+        except Exception:
+            pass
         lay = QVBoxLayout(dlg)
+        logo_lbl = QLabel()
+        try:
+            pm = QPixmap(str(resource_path("assets/logo.png")))
+            if not pm.isNull():
+                logo_lbl.setPixmap(pm.scaledToHeight(128, Qt.SmoothTransformation))
+                logo_lbl.setAlignment(Qt.AlignCenter)
+                lay.addWidget(logo_lbl)
+        except Exception:
+            pass
         info = QLabel(
             f"<b>{APP_NAME} {APP_VERSION}</b> — шлюз DICOM → PACS<br>"
             f"Профиль: {c.profile_name()}<br><br>"

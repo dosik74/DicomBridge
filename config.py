@@ -12,7 +12,7 @@ from pathlib import Path
 
 # === Название и версия меняются только здесь ===
 APP_NAME = "DicomBridge"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 
 SECTION_DEFAULTS = {
     "General": {
@@ -230,3 +230,13 @@ def instance_mutex_name(config_path) -> str:
     key = str(Path(config_path).resolve())
     digest = hashlib.md5(key.encode("utf-8")).hexdigest()[:12]
     return f"Global\\{APP_NAME}_{digest}"
+
+
+def resource_path(rel: str) -> Path:
+    """Путь к bundled-ресурсу (assets/): работает и в .py, и в .exe.
+
+    PyInstaller упаковывает assets через --add-data в sys._MEIPASS.
+    """
+    meipass = getattr(sys, "_MEIPASS", None)
+    base = Path(meipass) if meipass else Path(__file__).resolve().parent
+    return base / rel

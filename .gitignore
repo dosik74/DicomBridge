@@ -24,3 +24,9 @@ support_*.zip
 
 # Installer output
 /setup/
+
+# PyInstaller spec (generated)
+/*.spec
+
+# Original huge artwork (derived assets/ committed instead)
+/img/

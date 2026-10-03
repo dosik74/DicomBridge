@@ -12,7 +12,7 @@ from pathlib import Path
 
 # === Название и версия меняются только здесь ===
 APP_NAME = "DicomBridge"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 SECTION_DEFAULTS = {
     "General": {

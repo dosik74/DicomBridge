@@ -21,3 +21,6 @@ dist/
 test_dicoms/
 incoming_test/
 support_*.zip
+
+# Installer output
+/setup/

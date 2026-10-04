@@ -744,10 +744,9 @@ class MainWindow(QMainWindow):
         lay.addWidget(info)
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
-        buttons = QDialogButtonBox(QDialogButtonBox.Close)
-        buttons.rejected.connect(dlg.reject)
-        buttons.accepted.connect(dlg.accept)
-        btn_row.addWidget(buttons)
+        btn_close = QPushButton("Закрыть")
+        btn_close.clicked.connect(dlg.accept)
+        btn_row.addWidget(btn_close)
         lay.addLayout(btn_row)
         dlg.exec()
 

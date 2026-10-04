@@ -12,7 +12,7 @@ from pathlib import Path
 
 # === Название и версия меняются только здесь ===
 APP_NAME = "DicomBridge"
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 
 SECTION_DEFAULTS = {
     "General": {
@@ -21,6 +21,7 @@ SECTION_DEFAULTS = {
         "autostart": "false",
         "minimize_to_tray": "true",
         "disclaimer_accepted": "false",  # дисклеймер принят при первом старте
+        "config_version": "1",  # версия схемы конфига (для миграций старых файлов)
     },
     "Folders": {
         "import_dir": "",
@@ -122,6 +123,10 @@ class ConfigManager:
 
     # -- базовые операции --
     def load(self) -> None:
+        # штамп версии — по СЫРОМУ файлу отдельным парсером: основной парсер
+        # уже содержит предзагруженные дефолты, read() их не стирает,
+        # поэтому «было ли в файле» иначе не отличить
+        had_ver = self._file_ver()
         if self.path.exists():
             try:
                 self.parser.read(self.path, encoding="utf-8")
@@ -134,6 +139,46 @@ class ConfigManager:
             for k, v in kv.items():
                 if k not in self.parser[section]:
                     self.parser[section][k] = v
+        self._migrate(explicit_ver=had_ver)
+
+    def _file_ver(self) -> int:
+        """Версия схемы, записанная в файле (0 — нет файла/ключа)."""
+        try:
+            probe = configparser.ConfigParser(interpolation=None)
+            probe.read(self.path, encoding="utf-8")
+            return int(probe.get("General", "config_version", fallback="0"))
+        except (ValueError, configparser.Error, OSError):
+            return 0
+
+    def _stored_ver(self) -> int:
+        try:
+            return int(self.parser.get("General", "config_version",
+                                       fallback="0"))
+        except ValueError:
+            return 0
+
+    def _migrate(self, explicit_ver: int = 0) -> None:
+        """Миграции старых config.ini (однократно, по штампу версии).
+
+        v1: пустые поля Support (конфиг создан до появления дефолтов
+        инженера) заполняются дефолтами. Кто позже очистит поле вручную —
+        оно уже не перезапишется (штамп выставлен).
+        """
+        # Штамп из файла на момент чтения (до backfill, который мог
+        # добавить "1" из дефолтов). Ему и доверяем.
+        ver = explicit_ver
+        if ver < 1:
+            for k in ("organization", "engineer", "phone"):
+                try:
+                    if not self.parser["Support"].get(k, "").strip():
+                        self.parser["Support"][k] = SECTION_DEFAULTS["Support"][k]
+                except Exception:
+                    pass
+            self.parser["General"]["config_version"] = "1"
+            try:
+                self.save()
+            except Exception:
+                pass
 
     def save(self) -> None:
         try:

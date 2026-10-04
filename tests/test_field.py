@@ -56,6 +56,24 @@ def test_config_new_fields(tmp_path):
     assert cfg.log_dir() == tmp_path / "mylogs"
 
 
+def test_support_migration_fills_old_config(tmp_path):
+    """Старый config.ini с пустыми Support-полями получает дефолты инженера."""
+    p = tmp_path / "config.ini"
+    p.write_text(
+        "[General]\nlog_level = INFO\n"
+        "[Support]\norganization = \nengineer = \nphone = \n",
+        encoding="utf-8",
+    )
+    cfg = ConfigManager(str(p))
+    assert cfg.get("Support", "engineer") == "Кәдірберді Әсет"
+    assert cfg.get("Support", "phone") == "+7 707 861 6635"
+    # повторная загрузка не затирает ручную очистку
+    cfg.set("Support", "phone", "")
+    cfg.save()
+    cfg2 = ConfigManager(str(p))
+    assert cfg2.get("Support", "phone") == ""
+
+
 def test_support_bundle(tmp_path):
     from core.queue import ErrorQueue
     from core.support_bundle import create_support_bundle

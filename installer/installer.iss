@@ -2,7 +2,9 @@
 ; Build: iscc installer\installer.iss   (output -> setup\DicomBridge-Setup.exe)
 
 #define MyAppName "DicomBridge"
-#define MyAppVersion "1.0.1"
+#ifndef MyAppVersion
+  #define MyAppVersion "dev"
+#endif
 #define MyAppPublisher "dosik74"
 #define MyAppURL "https://github.com/dosik74/DicomBridge"
 
